@@ -1,14 +1,14 @@
 import struct
 from progress.bar import Bar
-from numpy import sin, cos, matrix
+from numpy import sin, cos
 
-r = Renderer()
+r = ObjetoRender()
 r.glInit()
 r.glCreateWindow(1000, 1000)
 r.glViewPort(0, 0, 1000, 1000)
 
-# r.lookAt(V3(0, 0, 50), V3(0, 0, 0), V3(0, 1, 1))
-r.lookAt(V3(0, 0, 100), V3(0, 0, 0), V3(0, 2, 2))
+# r.lookAt(VectorTridimensional(0, 0, 50), VectorTridimensional(0, 0, 0), VectorTridimensional(0, 1, 1))
+r.lookAt(VectorTridimensional(0, 0, 100), VectorTridimensional(0, 0, 0), VectorTridimensional(0, 2, 2))
 print("Background:")
 background = Texture('./materiales/fondo.bmp')
 r.pixels = background.pixels
@@ -41,17 +41,17 @@ r.load('./materiales/table.obj', translate=(-0.4, -2.4, 0),
 r.glFinish()
 
 
-V2 = namedtuple('Point2D', ['x', 'y'])
-V3 = namedtuple('Point3D', ['x', 'y', 'z'])
-V4 = namedtuple('Point4D', ['x', 'y', 'z', 'w'])
+V2 = variableTipoTupla('Point2D', ['x', 'y'])
+VectorTridimensional = variableTipoTupla('Point3D', ['x', 'y', 'z'])
+V4 = variableTipoTupla('Point4D', ['x', 'y', 'z', 'w'])
 
 
 def sum(v0, v1):
-    return V3(v0.x + v1.x, v0.y + v1.y, v0.z + v1.z)
+    return VectorTridimensional(v0.x + v1.x, v0.y + v1.y, v0.z + v1.z)
 
 
 def sub(v0, v1):
-    return V3(
+    return VectorTridimensional(
         v0.x - v1.x,
         v0.y - v1.y,
         v0.z - v1.z
@@ -65,7 +65,7 @@ def subVectors(vec1, vec2):
 
 
 def mul(v0, k):
-    return V3(v0.x * k, v0.y * k, v0.z * k)
+    return VectorTridimensional(v0.x * k, v0.y * k, v0.z * k)
 
 
 def multiply(dotNumber, normal):
@@ -87,7 +87,7 @@ def cross(v0, v1):
     cx = v0.y * v1.z - v0.z * v1.y
     cy = v0.z * v1.x - v0.x * v1.z
     cz = v0.x * v1.y - v0.y * v1.x
-    return V3(cx, cy, cz)
+    return VectorTridimensional(cx, cy, cz)
 
 
 def cross0(v0, v1):
@@ -105,16 +105,16 @@ def norm(v0):
     l = length(v0)
 
     if l == 0:
-        return V3(0, 0, 0)
+        return VectorTridimensional(0, 0, 0)
 
-    return V3(
+    return VectorTridimensional(
         v0.x/l,
         v0.y/l,
         v0.z/l
     )
 
 
-def bbox(A, B, C):
+def baricentriBox(A, B, C):
     xs = [A.x, B.x, C.x]
     xs.sort()
     ys = [A.y, B.y, C.y]
@@ -124,8 +124,8 @@ def bbox(A, B, C):
 
 def barycentric(A, B, C, P):
     bary = cross(
-        V3(C.x - A.x, B.x - A.x, A.x - P.x),
-        V3(C.y - A.y, B.y - A.y, A.y - P.y)
+        VectorTridimensional(C.x - A.x, B.x - A.x, A.x - P.x),
+        VectorTridimensional(C.y - A.y, B.y - A.y, A.y - P.y)
     )
 
     if abs(bary[2]) < 1:
@@ -293,7 +293,7 @@ def product_matrix_vector(G, v):
 
 
 
-class Renderer(object):
+class ObjetoRender(object):
 
     def glInit(self):
         self.color = color(50, 50, 50)
@@ -301,7 +301,7 @@ class Renderer(object):
         self.filename = 'Escena Final.bmp'
         self.pixels = [[]]
         self.zbuffer = [[]]
-        self.light = V3(0, 0, 1)
+        self.light = VectorTridimensional(0, 0, 1)
 
         self.width = 0
         self.height = 0
@@ -327,26 +327,15 @@ class Renderer(object):
         ]
 
     def glClearColor(self, r, g, b):
-        if not (0 <= r <= 1) or not (0 <= g <= 1) or not (0 <= b <= 1):
-            raise Exception('unexpected color value')
-
         self.clean_color = color(int(r * 255), int(g * 255), int(b * 255))
-
     def glColor(self, r, g, b):
-        if not (0 <= r <= 1) or not (0 <= g <= 1) or not (0 <= b <= 1):
-            raise Exception('unexpected color value')
-
         self.current_color = color(int(r * 255), int(g * 255), int(b * 255))
-
     def glCreateWindow(self, width, height):
         self.width = width
         self.height = height
         self.glClear()
 
     def glViewPort(self, x, y, width, height):
-
-        if (width > self.width) or (height > self.height):
-            raise Exception('Viewport larger than window')
 
         self.OffsetX = int(x)
         self.OffsetY = int(y)
@@ -355,8 +344,6 @@ class Renderer(object):
         self.ImageHeight = int(height)
 
     def glVertex(self, x, y):
-        if not (-1 <= x <= 1) or not (-1 <= y <= 1):
-            raise Exception('unexpected vertex offset')
 
         x = int((x+1)*(self.ImageWidth/2)+self.OffsetX)
         y = int((y+1)*(self.ImageHeight/2)+self.OffsetY)
@@ -448,7 +435,7 @@ class Renderer(object):
 
         transformedVertex = V4(*transformedVertex)
 
-        return V3(
+        return VectorTridimensional(
             transformedVertex.x / transformedVertex.w,
             transformedVertex.y / transformedVertex.w,
             transformedVertex.z / transformedVertex.w
@@ -460,7 +447,7 @@ class Renderer(object):
         self.active_texture = texture
         self.active_normalMap = normal
 
-        light = V3(0, 0, 1)
+        light = VectorTridimensional(0, 0, 1)
 
         bar = Bar('Cargando caras: ', max=len(model.faces))
         for face in model.faces:
@@ -488,17 +475,17 @@ class Renderer(object):
                     t2 = face[1][1] - 1
                     t3 = face[2][1] - 1
 
-                    tA = V3(*model.tvertices[t1])
-                    tB = V3(*model.tvertices[t2])
-                    tC = V3(*model.tvertices[t3])
+                    tA = VectorTridimensional(*model.tvertices[t1])
+                    tB = VectorTridimensional(*model.tvertices[t2])
+                    tC = VectorTridimensional(*model.tvertices[t3])
 
                     tn1 = face[0][2] - 1
                     tn2 = face[1][2] - 1
                     tn3 = face[2][2] - 1
                     
-                    tnA = V3(*model.nvertices[tn1])
-                    tnB = V3(*model.nvertices[tn2])
-                    tnC = V3(*model.nvertices[tn3])
+                    tnA = VectorTridimensional(*model.nvertices[tn1])
+                    tnB = VectorTridimensional(*model.nvertices[tn2])
+                    tnC = VectorTridimensional(*model.nvertices[tn3])
 
                     self.triangle(a, b, c, texture=texture, texture_coords=(tA, tB, tC), texture_n= (tnA,tnB,tnC), intensity=intensity)
             else:
@@ -532,27 +519,27 @@ class Renderer(object):
                     t2 = face[1][1] - 1
                     t3 = face[2][1] - 1
                     t4 = face[3][1] - 1
-                    tA = V3(*model.tvertices[t1])
-                    tB = V3(*model.tvertices[t2])
-                    tC = V3(*model.tvertices[t3])
-                    tD = V3(*model.tvertices[t4])
+                    tA = VectorTridimensional(*model.tvertices[t1])
+                    tB = VectorTridimensional(*model.tvertices[t2])
+                    tC = VectorTridimensional(*model.tvertices[t3])
+                    tD = VectorTridimensional(*model.tvertices[t4])
 
                     tn1 = face[0][2] - 1
                     tn2 = face[1][2] - 1
                     tn3 = face[2][2] - 1
                     tn4 = face[3][2] - 1
                     
-                    tnA = V3(*model.nvertices[tn1])
-                    tnB = V3(*model.nvertices[tn2])
-                    tnC = V3(*model.nvertices[tn3])
-                    tnD = V3(*model.nvertices[tn4])
+                    tnA = VectorTridimensional(*model.nvertices[tn1])
+                    tnB = VectorTridimensional(*model.nvertices[tn2])
+                    tnC = VectorTridimensional(*model.nvertices[tn3])
+                    tnD = VectorTridimensional(*model.nvertices[tn4])
                     
                     self.triangle(A, B, C, texture=texture, texture_coords=(tA, tB, tC), texture_n= (tnA,tnB,tnC), intensity=intensity)
                     self.triangle(A, C, D, texture=texture, texture_coords=(tA, tC, tD), texture_n= (tnA,tnC,tnD), intensity=intensity)
             bar.next()
         bar.finish()
     def triangle(self, A, B, C, color=None, texture=None, texture_coords=(),texture_n= (), intensity=1):
-        xmin, xmax, ymin, ymax = bbox(A, B, C)
+        xmin, xmax, ymin, ymax = baricentriBox(A, B, C)
         xmin, xmax, ymin, ymax = int(xmin), int(xmax), int(ymin), int(ymax)
 
         for x in range(xmin, xmax + 1):
@@ -591,7 +578,7 @@ class Renderer(object):
 
     def showZbuffer(self):
         # Prints the pixels to the screen
-        f = open('result.bmp', 'bw')
+        f = open('bmpresultado.bmp', 'bw')
 
         # File header (14 bytes)
         f.write(char('B'))
@@ -629,9 +616,9 @@ class Renderer(object):
         f.close()
 
     def loadMatrix(self, translate = (0, 0, 0), scale = (1, 1, 1), rotate = (0, 0, 0)):
-        translate = V3(*translate)
-        scale = V3(*scale)
-        rotate = V3(*rotate)
+        translate = VectorTridimensional(*translate)
+        scale = VectorTridimensional(*scale)
+        rotate = VectorTridimensional(*rotate)
         
         translateMatrix = [
             [1, 0, 0, translate.x],
@@ -729,7 +716,7 @@ class Renderer(object):
         tb = (tB.x, tB.y)
         tc = (tC.x, tC.y)
 
-        i = dot(norm(V3(nx,ny,nz)),L)
+        i = dot(norm(VectorTridimensional(nx,ny,nz)),L)
 
         tx = tA.x * w + tB.x * u + tC.x * v
         ty = tA.y * w + tB.y * u + tC.y * v
